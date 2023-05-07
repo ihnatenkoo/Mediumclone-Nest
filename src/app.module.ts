@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TagModule } from './tag/tag.module';
@@ -7,7 +8,12 @@ import { dataSourceOptions } from 'db/data-source';
 import { UserModule } from './user/user.module';
 
 @Module({
-  imports: [TypeOrmModule.forRoot(dataSourceOptions), TagModule, UserModule],
+  imports: [
+    ConfigModule.forRoot(),
+    TypeOrmModule.forRoot(dataSourceOptions),
+    TagModule,
+    UserModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
