@@ -26,6 +26,7 @@ export class UserController {
 
   @Post('users/login')
   @HttpCode(200)
+  @UsePipes(new ValidationPipe())
   async login(
     @Body('user') loginUserDto: LoginUserDto,
   ): Promise<IUserResponse> {
