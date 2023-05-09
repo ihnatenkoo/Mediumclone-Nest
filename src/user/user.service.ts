@@ -38,6 +38,7 @@ export class UserService {
   async login(loginUserDto: LoginUserDto): Promise<UserEntity> {
     const user = await this.userRepository.findOne({
       where: { email: loginUserDto.email },
+      select: ['id', 'username', 'password', 'email', 'bio', 'image'],
     });
 
     if (!user) {
@@ -56,6 +57,8 @@ export class UserService {
       );
     }
 
+    delete user.password;
+
     return user;
   }
 
@@ -70,7 +73,7 @@ export class UserService {
   }
 
   buildUserResponse(user: UserEntity): IUserResponse {
-    const { id, password, ...userResponse } = user;
+    const { id, ...userResponse } = user;
     return {
       user: {
         ...userResponse,
