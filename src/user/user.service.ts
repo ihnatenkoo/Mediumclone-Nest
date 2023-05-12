@@ -3,10 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { sign } from 'jsonwebtoken';
 import { compare } from 'bcrypt';
-import { CreateUserDto } from './dto/createUser.dto';
-import { UserEntity } from './user.entity';
 import { IUserResponse } from './types/userResponse.interface';
+import { CreateUserDto } from './dto/createUser.dto';
 import { LoginUserDto } from './dto/loginUser.dto';
+import { UpdateUserDto } from './dto/updateUser.dto';
+import { UserEntity } from './user.entity';
 
 @Injectable()
 export class UserService {
@@ -32,7 +33,19 @@ export class UserService {
 
     const newUser = new UserEntity();
     Object.assign(newUser, createUserDto);
+
     return await this.userRepository.save(newUser);
+  }
+
+  async updateUser(
+    userId: number,
+    updateUserDto: UpdateUserDto,
+  ): Promise<UserEntity> {
+    const user = await this.userRepository.findOneBy({ id: userId });
+
+    Object.assign(user, updateUserDto);
+
+    return await this.userRepository.save(user);
   }
 
   async login(loginUserDto: LoginUserDto): Promise<UserEntity> {
