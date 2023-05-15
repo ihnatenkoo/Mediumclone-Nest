@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { UserEntity } from 'src/user/user.entity';
 import { ArticleEntity } from './article.entity';
 import { CreateArticleDto } from './dto/createArticle.dto';
+import { IArticleResponse } from './types/articleResponse.interface';
 
 @Injectable()
 export class ArticleService {
@@ -29,5 +30,9 @@ export class ArticleService {
     article.slug = 'foo';
 
     return await this.articleRepository.save(article);
+  }
+
+  buildArticleResponse(article: ArticleEntity): IArticleResponse {
+    return { article };
   }
 }
