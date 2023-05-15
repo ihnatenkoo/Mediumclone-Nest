@@ -24,7 +24,7 @@ export class ArticleService {
 
     article.author = currentUser;
 
-    article.slug = this.getSlug(createArticleDto.title);
+    article.slug = this.generateSlug(createArticleDto.title);
 
     if (!article.tagList) {
       article.tagList = [];
@@ -33,11 +33,18 @@ export class ArticleService {
     return await this.articleRepository.save(article);
   }
 
+  async getArticleBySlag(slug: string): Promise<ArticleEntity> {
+    return await this.articleRepository.findOne({
+      where: { slug },
+      relations: ['author'],
+    });
+  }
+
   buildArticleResponse(article: ArticleEntity): IArticleResponse {
     return { article };
   }
 
-  private getSlug(title: string): string {
+  private generateSlug(title: string): string {
     const randomString = getRandomString();
     return slugify(title, { lower: true }) + '-' + randomString;
   }
