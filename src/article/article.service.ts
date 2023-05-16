@@ -22,7 +22,9 @@ export class ArticleService {
     currentUserId: number,
     query: IArticleQuery,
   ): Promise<IArticleQueryResponse> {
-    const queryBuilder = this.articleRepository.createQueryBuilder();
+    const queryBuilder = this.articleRepository
+      .createQueryBuilder('articles')
+      .leftJoinAndSelect('articles.author', 'author');
 
     const articles = await queryBuilder.getMany();
     const articlesCount = await queryBuilder.getCount();
