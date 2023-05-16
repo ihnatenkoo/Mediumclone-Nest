@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   Post,
   Put,
@@ -77,6 +78,21 @@ export class ArticleController {
     const article = await this.articleService.updateArticle(
       slug,
       updateArticleDto,
+      currentUserId,
+    );
+
+    return this.articleService.buildArticleResponse(article);
+  }
+
+  @Post(':slug/favorite')
+  @UseGuards(AuthGuard)
+  @HttpCode(200)
+  async addArticleToFavorites(
+    @User('id') currentUserId: number,
+    @Param('slug') slug: string,
+  ): Promise<IArticleResponse> {
+    const article = await this.articleService.addArticleToFavorites(
+      slug,
       currentUserId,
     );
 
