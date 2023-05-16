@@ -6,14 +6,16 @@ import slugify from 'slugify';
 import { IArticleQuery } from './types/articleQuery.interface';
 import { IArticleQueryResponse } from './types/articleQueryResponse.interface';
 import { IArticleResponse } from './types/articleResponse.interface';
+import { getRandomString } from 'src/utils/getRandomString';
+import { UserEntity } from 'src/user/user.entity';
 import { CreateArticleDto } from './dto/createArticle.dto';
 import { ArticleEntity } from './article.entity';
-import { UserEntity } from 'src/user/user.entity';
-import { getRandomString } from 'src/utils/getRandomString';
 
 @Injectable()
 export class ArticleService {
   constructor(
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(ArticleEntity)
     private readonly articleRepository: Repository<ArticleEntity>,
   ) {}
@@ -26,8 +28,35 @@ export class ArticleService {
       .createQueryBuilder('articles')
       .leftJoinAndSelect('articles.author', 'author');
 
-    const articles = await queryBuilder.getMany();
+    queryBuilder.orderBy('articles.createdAt', 'DESC');
+
     const articlesCount = await queryBuilder.getCount();
+
+    if (query.tag) {
+      queryBuilder.andWhere('articles.tagList LIKE :tag', {
+        tag: `%${query.tag}%`,
+      });
+    }
+
+    if (query.author) {
+      const author = await this.userRepository.findOne({
+        where: { username: query.author },
+      });
+
+      queryBuilder.andWhere('articles.authorId = :id', {
+        id: author?.id,
+      });
+    }
+
+    if (query.limit) {
+      queryBuilder.limit(Number(query.limit));
+    }
+
+    if (query.offset) {
+      queryBuilder.offset(Number(query.offset));
+    }
+
+    const articles = await queryBuilder.getMany();
 
     return { articles, articlesCount };
   }
