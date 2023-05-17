@@ -136,6 +136,10 @@ export class ArticleService {
       relations: ['favorites'],
     });
 
+    if (!article) {
+      throw new HttpException('Article not found', HttpStatus.NOT_FOUND);
+    }
+
     const isFavorite = user.favorites.some(
       (articleInFavorites) => articleInFavorites.id === article.id,
     );
@@ -145,6 +149,34 @@ export class ArticleService {
       article.favoritesCount++;
       await this.userRepository.save(user);
       await this.articleRepository.save(article);
+    }
+
+    return article;
+  }
+
+  async deleteArticleFromFavorites(
+    slug: string,
+    currentUserId: number,
+  ): Promise<ArticleEntity> {
+    const article = await this.getArticleBySlag(slug);
+    const user = await this.userRepository.findOne({
+      where: { id: currentUserId },
+      relations: ['favorites'],
+    });
+
+    if (!article) {
+      throw new HttpException('Article not found', HttpStatus.NOT_FOUND);
+    }
+
+    const favoriteArticleIndex = user.favorites.findIndex(
+      (articleInFavorites) => articleInFavorites.id === article.id,
+    );
+
+    if (favoriteArticleIndex > -1) {
+      user.favorites.splice(favoriteArticleIndex, 1);
+      article.favoritesCount--;
+      await this.articleRepository.save(article);
+      await this.userRepository.save(user);
     }
 
     return article;
