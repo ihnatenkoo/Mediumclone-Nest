@@ -10,6 +10,7 @@ import { getRandomString } from 'src/utils/getRandomString';
 import { UserEntity } from 'src/user/user.entity';
 import { CreateArticleDto } from './dto/createArticle.dto';
 import { ArticleEntity } from './article.entity';
+import { ArticleType } from './types/article.type';
 
 @Injectable()
 export class ArticleService {
@@ -54,7 +55,7 @@ export class ArticleService {
         relations: ['favorites'],
       });
 
-      const ids = author.favorites.map((i) => i.id);
+      const ids = author.favorites.map((favorite) => favorite.id);
 
       if (ids.length) {
         queryBuilder.andWhere('articles.id IN (:...ids)', { ids });
@@ -73,7 +74,29 @@ export class ArticleService {
 
     const articles = await queryBuilder.getMany();
 
-    return { articles, articlesCount };
+    let articlesWithFavorites: Array<ArticleType> = [];
+
+    if (currentUserId) {
+      const currentUser = await this.userRepository.findOne({
+        where: { id: currentUserId },
+        relations: ['favorites'],
+      });
+
+      const favoriteIds: Array<number> = currentUser.favorites.map(
+        (favorite) => favorite.id,
+      );
+
+      articlesWithFavorites = articles.map((article) => {
+        const favorited = favoriteIds.includes(article.id);
+        return { ...article, favorited };
+      });
+    } else {
+      articlesWithFavorites = articles.map((article) => {
+        return { ...article, favorited: false };
+      });
+    }
+
+    return { articles: articlesWithFavorites, articlesCount };
   }
 
   async createArticle(
