@@ -19,6 +19,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typeorm": "npm run build && npx typeorm -d dist/db/data-source.js",
     "db:drop": "npm run typeorm schema:drop",
+    "db:seed": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d db/data-source-seeds.ts migration:run",
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert "
