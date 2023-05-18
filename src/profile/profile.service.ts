@@ -22,6 +22,7 @@ export class ProfileService {
       throw new HttpException('Profile does not exist', HttpStatus.NOT_FOUND);
     }
 
+    //TODO: implement following logic
     return { ...user, following: false };
   }
 
@@ -44,11 +45,11 @@ export class ProfileService {
       );
     }
 
-    const follow = await this.followRepository.findOne({
+    const followRecord = await this.followRepository.findOne({
       where: { followerId: currentUserId, followingId: followingUser.id },
     });
 
-    if (!follow) {
+    if (!followRecord) {
       const followRecord = new FollowEntity();
       followRecord.followerId = currentUserId;
       followRecord.followingId = followingUser.id;
@@ -56,6 +57,33 @@ export class ProfileService {
     }
 
     return { ...followingUser, following: true };
+  }
+
+  async unfollowProfile(
+    currentUserId: number,
+    unfollowUsername: string,
+  ): Promise<ProfileType> {
+    const unfollowUser = await this.userRepository.findOne({
+      where: { username: unfollowUsername },
+    });
+
+    if (!unfollowUser) {
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (unfollowUser.id === currentUserId) {
+      throw new HttpException(
+        'You cant unfollow of yourself',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    await this.followRepository.delete({
+      followerId: currentUserId,
+      followingId: unfollowUser.id,
+    });
+
+    return { ...unfollowUser, following: false };
   }
 
   buildProfileResponse(profile: ProfileType): IProfileResponse {
