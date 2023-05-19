@@ -3,14 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DeleteResult, Repository } from 'typeorm';
 import slugify from 'slugify';
 
+import { CreateArticleDto } from './dto/createArticle.dto';
 import { IArticleQuery } from './types/articleQuery.interface';
 import { IArticleQueryResponse } from './types/articleQueryResponse.interface';
 import { IArticleResponse } from './types/articleResponse.interface';
-import { getRandomString } from 'src/utils/getRandomString';
-import { UserEntity } from 'src/user/user.entity';
-import { CreateArticleDto } from './dto/createArticle.dto';
-import { ArticleEntity } from './article.entity';
 import { ArticleType } from './types/article.type';
+import { UserEntity } from 'src/user/user.entity';
+import { ArticleEntity } from './article.entity';
+import { FollowEntity } from 'src/profile/follow.entity';
+import { getRandomString } from 'src/utils/getRandomString';
 
 @Injectable()
 export class ArticleService {
@@ -19,6 +20,8 @@ export class ArticleService {
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(ArticleEntity)
     private readonly articleRepository: Repository<ArticleEntity>,
+    @InjectRepository(FollowEntity)
+    private readonly followRepository: Repository<FollowEntity>,
   ) {}
 
   async findAll(
@@ -97,6 +100,42 @@ export class ArticleService {
     }
 
     return { articles: articlesWithFavorites, articlesCount };
+  }
+
+  async getFeed(
+    currentUserId: number,
+    query: IArticleQuery,
+  ): Promise<IArticleQueryResponse> {
+    const follows = await this.followRepository.find({
+      where: { followerId: currentUserId },
+    });
+
+    if (!follows.length) {
+      return { articles: [], articlesCount: 0 };
+    }
+
+    const followingUserIds = follows.map((follow) => follow.followingId);
+
+    const queryBuilder = this.articleRepository
+      .createQueryBuilder('articles')
+      .leftJoinAndSelect('articles.author', 'author')
+      .where('articles.authorId IN (:...ids)', { ids: followingUserIds });
+
+    queryBuilder.addOrderBy('articles.createdAt', 'DESC');
+
+    const articlesCount = await queryBuilder.getCount();
+
+    if (query.limit) {
+      queryBuilder.limit(Number(query.limit));
+    }
+
+    if (query.offset) {
+      queryBuilder.offset(Number(query.offset));
+    }
+
+    const articles = await queryBuilder.getMany();
+
+    return { articles, articlesCount };
   }
 
   async createArticle(
