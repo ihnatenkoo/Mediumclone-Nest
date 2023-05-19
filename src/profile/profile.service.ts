@@ -15,14 +15,24 @@ export class ProfileService {
     private readonly followRepository: Repository<FollowEntity>,
   ) {}
 
-  async getProfile(username: string): Promise<ProfileType> {
+  async getProfile(
+    username: string,
+    currentUserId: number | null,
+  ): Promise<ProfileType> {
     const user = await this.userRepository.findOne({ where: { username } });
 
     if (!user) {
       throw new HttpException('Profile does not exist', HttpStatus.NOT_FOUND);
     }
 
-    //TODO: implement following logic
+    if (currentUserId) {
+      const followingRecord = await this.followRepository.findOne({
+        where: { followerId: currentUserId, followingId: user.id },
+      });
+
+      return { ...user, following: Boolean(followingRecord) };
+    }
+
     return { ...user, following: false };
   }
 

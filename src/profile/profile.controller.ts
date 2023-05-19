@@ -18,8 +18,12 @@ export class ProfileController {
   @Get(':username')
   async getProfile(
     @Param('username') username: string,
+    @User('id') currentUserId: number | null,
   ): Promise<IProfileResponse> {
-    const profile = await this.profileService.getProfile(username);
+    const profile = await this.profileService.getProfile(
+      username,
+      currentUserId,
+    );
 
     return this.profileService.buildProfileResponse(profile);
   }
