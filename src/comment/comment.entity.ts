@@ -20,5 +20,5 @@ export class CommentEntity {
   author: UserEntity;
 
   @ManyToOne(() => ArticleEntity, (article) => article.comments)
-  article: ArticleEntity[];
+  article: ArticleEntity;
 }
