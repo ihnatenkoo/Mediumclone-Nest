@@ -13,13 +13,15 @@ import {
 } from '@nestjs/common';
 import { DeleteResult } from 'typeorm';
 
+import { BackendValidationPipe } from 'src/shared/pipes/backendValidation.pipe';
+import { AuthGuard } from 'src/user/guards/auth.guard';
 import { User } from 'src/user/decorators/user.decorator';
 import { IArticleQuery } from './types/articleQuery.interface';
 import { IArticleResponse } from './types/articleResponse.interface';
 import { IArticleQueryResponse } from './types/articleQueryResponse.interface';
 import { CreateArticleDto } from './dto/createArticle.dto';
-import { BackendValidationPipe } from 'src/shared/pipes/backendValidation.pipe';
-import { AuthGuard } from 'src/user/guards/auth.guard';
+import { CreateCommentDto } from 'src/comment/dto/createComment.dto';
+import { ICommentResponse } from 'src/comment/types/ICommentResponse.interface';
 import { UserEntity } from 'src/user/user.entity';
 import { ArticleService } from './article.service';
 
@@ -120,5 +122,21 @@ export class ArticleController {
     );
 
     return this.articleService.buildArticleResponse(article);
+  }
+
+  @Post(':slug/comments')
+  @UseGuards(AuthGuard)
+  async createComment(
+    @User('') currentUser: UserEntity,
+    @Body('comment') createArticleDto: CreateCommentDto,
+    @Param('slug') slug: string,
+  ): Promise<ICommentResponse> {
+    const comment = await this.articleService.createComment(
+      createArticleDto,
+      slug,
+      currentUser,
+    );
+
+    return this.articleService.buildCommentResponse(comment);
   }
 }

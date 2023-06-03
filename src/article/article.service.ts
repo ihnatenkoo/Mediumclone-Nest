@@ -12,6 +12,9 @@ import { UserEntity } from 'src/user/user.entity';
 import { ArticleEntity } from './article.entity';
 import { FollowEntity } from 'src/profile/follow.entity';
 import { getRandomString } from 'src/utils/getRandomString';
+import { CreateCommentDto } from 'src/comment/dto/createComment.dto';
+import { CommentEntity } from 'src/comment/comment.entity';
+import { ICommentResponse } from 'src/comment/types/ICommentResponse.interface';
 
 @Injectable()
 export class ArticleService {
@@ -22,6 +25,8 @@ export class ArticleService {
     private readonly articleRepository: Repository<ArticleEntity>,
     @InjectRepository(FollowEntity)
     private readonly followRepository: Repository<FollowEntity>,
+    @InjectRepository(CommentEntity)
+    private readonly commentRepository: Repository<CommentEntity>,
   ) {}
 
   async findAll(
@@ -259,8 +264,35 @@ export class ArticleService {
     return article;
   }
 
+  async createComment(
+    createArticleDto: CreateCommentDto,
+    slug: string,
+    currentUser: UserEntity,
+  ): Promise<CommentEntity> {
+    const article = await this.articleRepository.findOne({ where: { slug } });
+
+    if (!article) {
+      throw new HttpException('Article not found', HttpStatus.NOT_FOUND);
+    }
+
+    const comment = new CommentEntity();
+    Object.assign(comment, createArticleDto);
+
+    comment.author = currentUser;
+    comment.article = article;
+
+    const newComment = await this.commentRepository.save(comment);
+    delete newComment.article;
+
+    return newComment;
+  }
+
   buildArticleResponse(article: ArticleEntity): IArticleResponse {
     return { article };
+  }
+
+  buildCommentResponse(comment: CommentEntity): ICommentResponse {
+    return { comment };
   }
 
   private generateSlug(title: string): string {
