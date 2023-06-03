@@ -22,6 +22,7 @@ import { IArticleQueryResponse } from './types/articleQueryResponse.interface';
 import { CreateArticleDto } from './dto/createArticle.dto';
 import { CreateCommentDto } from 'src/comment/dto/createComment.dto';
 import { ICommentResponse } from 'src/comment/types/ICommentResponse.interface';
+import { ICommentsResponse } from 'src/comment/types/ICommentsResponse.interface';
 import { UserEntity } from 'src/user/user.entity';
 import { ArticleService } from './article.service';
 
@@ -138,5 +139,12 @@ export class ArticleController {
     );
 
     return this.articleService.buildCommentResponse(comment);
+  }
+
+  @Get(':slug/comments')
+  async getComments(@Param('slug') slug: string): Promise<ICommentsResponse> {
+    const comments = await this.articleService.getComments(slug);
+
+    return this.articleService.buildCommentsResponse(comments);
   }
 }

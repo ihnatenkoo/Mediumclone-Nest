@@ -15,6 +15,7 @@ import { getRandomString } from 'src/utils/getRandomString';
 import { CreateCommentDto } from 'src/comment/dto/createComment.dto';
 import { CommentEntity } from 'src/comment/comment.entity';
 import { ICommentResponse } from 'src/comment/types/ICommentResponse.interface';
+import { ICommentsResponse } from 'src/comment/types/ICommentsResponse.interface';
 
 @Injectable()
 export class ArticleService {
@@ -161,10 +162,20 @@ export class ArticleService {
     return await this.articleRepository.save(article);
   }
 
-  async getArticleBySlag(slug: string): Promise<ArticleEntity> {
-    return await this.articleRepository.findOne({
+  async getArticleBySlag(
+    slug: string,
+    relations: string[] = [],
+  ): Promise<ArticleEntity> {
+    const article = await this.articleRepository.findOne({
       where: { slug },
+      relations,
     });
+
+    if (!article) {
+      throw new HttpException('Article not found', HttpStatus.NOT_FOUND);
+    }
+
+    return article;
   }
 
   async deleteArticle(
@@ -287,12 +298,22 @@ export class ArticleService {
     return newComment;
   }
 
+  async getComments(slug: string): Promise<CommentEntity[]> {
+    const article = await this.getArticleBySlag(slug, ['comments']);
+
+    return article.comments;
+  }
+
   buildArticleResponse(article: ArticleEntity): IArticleResponse {
     return { article };
   }
 
   buildCommentResponse(comment: CommentEntity): ICommentResponse {
     return { comment };
+  }
+
+  buildCommentsResponse(comments: CommentEntity[]): ICommentsResponse {
+    return { comments };
   }
 
   private generateSlug(title: string): string {
