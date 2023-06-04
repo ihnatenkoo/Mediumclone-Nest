@@ -301,7 +301,30 @@ export class ArticleService {
   async getComments(slug: string): Promise<CommentEntity[]> {
     const article = await this.getArticleBySlag(slug, ['comments']);
 
+    if (!article) {
+      throw new HttpException('Article not found ', HttpStatus.NOT_FOUND);
+    }
+
     return article.comments;
+  }
+
+  async deleteComment(
+    slug: string,
+    commentId: number,
+    currentUserId: number,
+  ): Promise<void> {
+    const comments = await this.getComments(slug);
+    const comment = comments.find((c) => c.id === Number(commentId));
+
+    if (!comment) {
+      throw new HttpException('Comment not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (comment.author.id !== currentUserId) {
+      throw new HttpException('Comment not owned by you', HttpStatus.FORBIDDEN);
+    }
+
+    await this.commentRepository.delete({ id: commentId });
   }
 
   buildArticleResponse(article: ArticleEntity): IArticleResponse {
