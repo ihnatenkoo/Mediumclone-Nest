@@ -12,6 +12,10 @@ import { UserEntity } from 'src/user/user.entity';
 import { ArticleEntity } from './article.entity';
 import { FollowEntity } from 'src/profile/follow.entity';
 import { getRandomString } from 'src/utils/getRandomString';
+import { CreateCommentDto } from 'src/comment/dto/createComment.dto';
+import { CommentEntity } from 'src/comment/comment.entity';
+import { ICommentResponse } from 'src/comment/types/ICommentResponse.interface';
+import { ICommentsResponse } from 'src/comment/types/ICommentsResponse.interface';
 
 @Injectable()
 export class ArticleService {
@@ -22,6 +26,8 @@ export class ArticleService {
     private readonly articleRepository: Repository<ArticleEntity>,
     @InjectRepository(FollowEntity)
     private readonly followRepository: Repository<FollowEntity>,
+    @InjectRepository(CommentEntity)
+    private readonly commentRepository: Repository<CommentEntity>,
   ) {}
 
   async findAll(
@@ -156,10 +162,20 @@ export class ArticleService {
     return await this.articleRepository.save(article);
   }
 
-  async getArticleBySlag(slug: string): Promise<ArticleEntity> {
-    return await this.articleRepository.findOne({
+  async getArticleBySlag(
+    slug: string,
+    relations: string[] = [],
+  ): Promise<ArticleEntity> {
+    const article = await this.articleRepository.findOne({
       where: { slug },
+      relations,
     });
+
+    if (!article) {
+      throw new HttpException('Article not found', HttpStatus.NOT_FOUND);
+    }
+
+    return article;
   }
 
   async deleteArticle(
@@ -259,8 +275,68 @@ export class ArticleService {
     return article;
   }
 
+  async createComment(
+    createArticleDto: CreateCommentDto,
+    slug: string,
+    currentUser: UserEntity,
+  ): Promise<CommentEntity> {
+    const article = await this.articleRepository.findOne({ where: { slug } });
+
+    if (!article) {
+      throw new HttpException('Article not found', HttpStatus.NOT_FOUND);
+    }
+
+    const comment = new CommentEntity();
+    Object.assign(comment, createArticleDto);
+
+    comment.author = currentUser;
+    comment.article = article;
+
+    const newComment = await this.commentRepository.save(comment);
+    delete newComment.article;
+
+    return newComment;
+  }
+
+  async getComments(slug: string): Promise<CommentEntity[]> {
+    const article = await this.getArticleBySlag(slug, ['comments']);
+
+    if (!article) {
+      throw new HttpException('Article not found ', HttpStatus.NOT_FOUND);
+    }
+
+    return article.comments;
+  }
+
+  async deleteComment(
+    slug: string,
+    commentId: number,
+    currentUserId: number,
+  ): Promise<void> {
+    const comments = await this.getComments(slug);
+    const comment = comments.find((c) => c.id === Number(commentId));
+
+    if (!comment) {
+      throw new HttpException('Comment not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (comment.author.id !== currentUserId) {
+      throw new HttpException('Comment not owned by you', HttpStatus.FORBIDDEN);
+    }
+
+    await this.commentRepository.delete({ id: commentId });
+  }
+
   buildArticleResponse(article: ArticleEntity): IArticleResponse {
     return { article };
+  }
+
+  buildCommentResponse(comment: CommentEntity): ICommentResponse {
+    return { comment };
+  }
+
+  buildCommentsResponse(comments: CommentEntity[]): ICommentsResponse {
+    return { comments };
   }
 
   private generateSlug(title: string): string {
